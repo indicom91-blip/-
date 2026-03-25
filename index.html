@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FocusFlow AI</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #222222);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --button: var(--tg-theme-button-color, #2481cc);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --sec-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .card {
+            background-color: var(--sec-bg);
+            border-radius: 16px;
+            padding: 20px; width: 100%; box-sizing: border-box;
+            text-align: center; margin-bottom: 20px;
+        }
+        input {
+            width: 100%; padding: 12px;
+            border-radius: 10px; border: 1px solid var(--hint);
+            background: var(--bg); color: var(--text);
+            box-sizing: border-box; font-size: 16px; margin-bottom: 10px;
+        }
+        .task-list { width: 100%; text-align: left; }
+        .task-item {
+            background: var(--bg); padding: 10px;
+            border-radius: 8px; margin-bottom: 5px;
+            display: flex; justify-content: space-between;
+        }
+        button {
+            background-color: var(--button); color: var(--button-text);
+            border: none; padding: 12px 20px; border-radius: 10px;
+            width: 100%; font-weight: bold; cursor: pointer;
+        }
+        h1 { font-size: 20px; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Планы на сегодня, <span id="user-name">Дмитрий</span>! 🚀</h1>
+        <div id="progress">Прогресс: 0%</div>
+    </div>
+
+    <div class="task-list" id="taskList">
+        </div>
+
+    <div style="width: 100%; margin-top: 20px;">
+        <input type="text" id="taskInput" placeholder="Напиши задачу...">
+        <button id="addBtn">Добавить задачу</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const user = tg.initDataUnsafe?.user;
+        if (user) document.getElementById('user-name').innerText = user.first_name;
+
+        let tasks = [];
+
+        const taskInput = document.getElementById('taskInput');
+        const addBtn = document.getElementById('addBtn');
+        const taskList = document.getElementById('taskList');
+        const progressDiv = document.getElementById('progress');
+
+        // Функция обновления списка на экране
+        function renderTasks() {
+            taskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const item = document.createElement('div');
+                item.className = 'task-item';
+                item.innerHTML = `<span>${task}</span><span onclick="removeTask(${index})" style="color:red">✕</span>`;
+                taskList.appendChild(item);
+            });
+            
+            const percent = tasks.length > 0 ? Math.min(tasks.length * 20, 100) : 0;
+            progressDiv.innerText = `Задач в списке: ${tasks.length} (Прогресс: ${percent}%)`;
+            
+            // Если есть задачи, показываем главную кнопку внизу
+            if (tasks.length > 0) {
+                tg.MainButton.setText("ПОЛУЧИТЬ АНАЛИЗ ИИ").show();
+            } else {
+                tg.MainButton.hide();
+            }
+        }
+
+        // Кнопка "Добавить"
+        addBtn.addEventListener('click', () => {
+            const val = taskInput.value.trim();
+            if (val) {
+                tasks.push(val);
+                taskInput.value = '';
+                renderTasks();
+                tg.HapticFeedback.impactOccurred('light'); // Виброотклик
+            }
+        });
+
+        // Удаление задачи
+        window.removeTask = (index) => {
+            tasks.splice(index, 1);
+            renderTasks();
+        };
+
+        // Клик по нижней синей кнопке Telegram
+        tg.onEvent('mainButtonClicked', function(){
+            const taskString = tasks.join(", ");
+            tg.showPopup({
+                title: 'ИИ Анализ',
+                message: `Твой список: ${taskString}. Мозг говорит: План амбициозный! Начинай с самой сложной задачи.`,
+                buttons: [{type: 'ok'}]
+            });
+        });
+    </script>
+</body>
+</html>
